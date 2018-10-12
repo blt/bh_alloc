@@ -1,64 +1,52 @@
 extern crate libc;
 
-use libc::{c_void, sbrk};
+use libc::{_exit, EXIT_SUCCESS};
 
 use std::alloc::{GlobalAlloc, Layout};
 use std::cell::UnsafeCell;
-use std::ptr;
 
-// Bump pointer allocator for *single* core systems
-struct BumpPointerAlloc {
-    head: UnsafeCell<*mut u8>,
-    end: UnsafeCell<*const u8>,
+pub const TOTAL_BYTES: usize = 500_000_000; // 500 MB
+static mut HEAP: [u8; TOTAL_BYTES] = [0; TOTAL_BYTES];
+
+// Bump allocator for *single* core systems
+pub struct BumpAlloc {
+    offset: UnsafeCell<usize>,
 }
 
-const TOTAL_ALLOC: i32 = 1024;
+unsafe impl Sync for BumpAlloc {}
 
-unsafe impl Sync for BumpPointerAlloc {}
+// thanks, wee_alloc
+trait ConstInit {
+    const INIT: Self;
+}
 
-unsafe impl GlobalAlloc for BumpPointerAlloc {
+impl ConstInit for BumpAlloc {
+    const INIT: BumpAlloc = BumpAlloc {
+        offset: UnsafeCell::new(0),
+    };
+}
+
+impl BumpAlloc {
+    pub const INIT: Self = <Self as ConstInit>::INIT;
+}
+
+unsafe impl GlobalAlloc for BumpAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        // It'd be nice to avoid this branch at every alloc but I'm unsure how
-        // to get GlobalAlloc to initialize at start-of-program. If we had that,
-        // we could call sbrk prior to any operations and be done.
-        let head = self.head.get();
-        let end = self.end.get();
+        let offset = self.offset.get();
+        let byte_size: usize = layout.size() as usize;
 
-        if head.is_null() {
-            let base: *mut c_void = sbrk(TOTAL_ALLOC);
-            *head = base as *mut u8;
-            *end = *head.offset(TOTAL_ALLOC as isize);
+        let end = *offset + byte_size;
+
+        if end >= TOTAL_BYTES {
+            _exit(EXIT_SUCCESS);
+        } else {
+            let p = HEAP[*offset..end].as_mut_ptr() as *mut u8;
+            *offset = end;
+            p
         }
-
-        unimplemented!()
-        // // `interrupt::free` is a critical section that makes our allocator safe
-        // // to use from within interrupts
-        // interrupt::free(|_| {
-        //     let head = self.head.get();
-
-        //     let align = layout.align();
-        //     let res = *head % align;
-        //     let start = if res == 0 { *head } else { *head + align - res };
-        //     if start + align > self.end {
-        //         // a null pointer signal an Out Of Memory condition
-        //         ptr::null_mut()
-        //     } else {
-        //         *head = start + align;
-        //         start as *mut u8
-        //     }
-        // })
     }
 
     unsafe fn dealloc(&self, _: *mut u8, _: Layout) {
         // never deallocate
     }
 }
-
-// Declaration of the global memory allocator
-// NOTE the user must ensure that the memory region `[0x2000_0100, 0x2000_0200]`
-// is not used by other parts of the program
-#[global_allocator]
-static HEAP: BumpPointerAlloc = BumpPointerAlloc {
-    head: UnsafeCell::new(ptr::null_mut()),
-    end: UnsafeCell::new(ptr::null()),
-};

@@ -6,3 +6,11 @@ edition = "2018"
 
 [dependencies]
 libc = "0.2"
+
+[[bin]]
+path = "src/bin/hello_world.rs"
+name = "hello_world"
+
+[[bin]]
+path = "src/bin/alloc_and_destroy.rs"
+name = "alloc_and_destroy"
