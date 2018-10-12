@@ -1,5 +1,19 @@
-extern crate libc;
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::cargo))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::complexity))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::correctness))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::pedantic))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::perf))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::style))]
+#![cfg_attr(feature = "cargo-clippy", feature(tool_lints))]
 
+#[deny(bad_style)]
+#[deny(future_incompatible)]
+#[deny(missing_docs)]
+#[deny(nonstandard_style)]
+#[deny(rust_2018_compatibility)]
+#[deny(rust_2018_idioms)]
+#[deny(unused)]
+#[deny(warnings)]
 use libc::{_exit, EXIT_SUCCESS};
 
 use std::alloc::{GlobalAlloc, Layout};

@@ -4,7 +4,7 @@ extern crate bh_alloc;
 static ALLOC: bh_alloc::BumpAlloc = bh_alloc::BumpAlloc::INIT;
 
 fn main() {
-    for i in 0..bh_alloc::TOTAL_BYTES + 1 {
+    for i in 0..=bh_alloc::TOTAL_BYTES {
         let bi = Box::new(i);
         drop(bi);
     }
