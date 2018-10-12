@@ -1,11 +1,11 @@
 [package]
 name = "bh_alloc"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Brian L. Troutwine <brian@troutwine.us>"]
-edition = "2018"
 keywords = ["fuzzing", "allocator"]
 categories = ["memory-management"]
-
+description = "A fuzzer friendly bump pointer allocator"
+license = "MIT"
 documentation = "https://docs.rs/bh_alloc/"
 repository = "https://github.com/blt/bh_alloc"
 

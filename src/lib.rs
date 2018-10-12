@@ -14,6 +14,8 @@
 #[deny(rust_2018_idioms)]
 #[deny(unused)]
 #[deny(warnings)]
+extern crate libc;
+
 use libc::{_exit, EXIT_SUCCESS};
 
 use std::alloc::{GlobalAlloc, Layout};
