@@ -3,6 +3,11 @@ name = "bh_alloc"
 version = "0.1.0"
 authors = ["Brian L. Troutwine <brian@troutwine.us>"]
 edition = "2018"
+keywords = ["fuzzing", "allocator"]
+categories = ["memory-management"]
+
+documentation = "https://docs.rs/bh_alloc/"
+repository = "https://github.com/blt/bh_alloc"
 
 [dependencies]
 libc = "0.2"

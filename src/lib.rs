@@ -19,10 +19,21 @@ use libc::{_exit, EXIT_SUCCESS};
 use std::alloc::{GlobalAlloc, Layout};
 use std::cell::UnsafeCell;
 
+/// Total number of bytes that [`BumpAlloc`] will have available to it.
 pub const TOTAL_BYTES: usize = 500_000_000; // 500 MB
 static mut HEAP: [u8; TOTAL_BYTES] = [0; TOTAL_BYTES];
 
-// Bump allocator for *single* core systems
+/// Bump allocator for *single* core systems
+///
+/// A bump allocator keeps a single pointer to the start of the unitialized
+/// heap. When an allocation happens this pointer is 'bumped' sufficiently to
+/// fit the allocation. Deallocations have no effect on the pointer, meaning
+/// that memory is allocated at program start and never freed. This is very
+/// fast.
+///
+/// BumpAlloc has an additional feature. When all its heap memory is exhausted
+/// `libc::_exit(EXIT_SUCCESS)` is called. This behaviour aids in the production
+/// of fuzzers.
 pub struct BumpAlloc {
     offset: UnsafeCell<usize>,
 }
