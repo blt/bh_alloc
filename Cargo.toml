@@ -1,6 +1,6 @@
 [package]
 name = "bh_alloc"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Brian L. Troutwine <brian@troutwine.us>"]
 keywords = ["fuzzing", "allocator"]
 categories = ["memory-management"]
@@ -11,6 +11,9 @@ repository = "https://github.com/blt/bh_alloc"
 
 [dependencies]
 libc = "0.2"
+
+[dev-dependencies]
+quickcheck = "0.7"
 
 [[bin]]
 path = "src/bin/hello_world.rs"

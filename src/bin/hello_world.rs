@@ -5,4 +5,7 @@ static ALLOC: bh_alloc::BumpAlloc = bh_alloc::BumpAlloc::INIT;
 
 fn main() {
     println!("Hello, world!");
+    for i in 0..1_000_000 {
+        println!("{}", i);
+    }
 }

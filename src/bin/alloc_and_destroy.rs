@@ -1,7 +1,7 @@
 extern crate bh_alloc;
 
 #[global_allocator]
-static ALLOC: bh_alloc::BumpAlloc = bh_alloc::BumpAlloc::INIT;
+static ALLOC: bh_alloc::fuzz::BumpAlloc = bh_alloc::fuzz::BumpAlloc::INIT;
 
 fn main() {
     for i in 0..=bh_alloc::TOTAL_BYTES {
