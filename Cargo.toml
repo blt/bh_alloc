@@ -1,6 +1,6 @@
 [package]
 name = "bh_alloc"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Brian L. Troutwine <brian@troutwine.us>"]
 keywords = ["fuzzing", "allocator"]
 categories = ["memory-management"]

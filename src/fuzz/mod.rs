@@ -50,12 +50,20 @@ impl BumpAlloc {
     pub const INIT: Self = <Self as ConstInit>::INIT;
 }
 
+fn align_gt(addr: usize, align: usize) -> usize {
+    if align == 0 {
+        addr
+    } else {
+        (addr + align - 1) & !(align - 1)
+    }
+}
+
 unsafe impl GlobalAlloc for BumpAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let offset = self.offset.get();
-        let byte_size: usize = layout.size() as usize;
 
-        let end = *offset + byte_size;
+        let start = align_gt(*offset, layout.align());
+        let end = start.saturating_add(layout.size());
 
         if end >= TOTAL_BYTES {
             _exit(EXIT_SUCCESS);
