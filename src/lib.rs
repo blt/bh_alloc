@@ -4,7 +4,6 @@
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::pedantic))]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::perf))]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::style))]
-#![cfg_attr(feature = "cargo-clippy", feature(tool_lints))]
 
 #[cfg(test)]
 extern crate quickcheck;
@@ -55,27 +54,20 @@ impl BumpAlloc {
     pub const INIT: Self = <Self as ConstInit>::INIT;
 }
 
-fn round_to_multiple_of(val: usize, align: usize) -> usize {
+fn align_gt(addr: usize, align: usize) -> usize {
     if align == 0 {
-        return val;
-    }
-
-    let rem = val % align;
-    if rem == 0 {
-        val
+        addr
     } else {
-        (val + align) - rem
+        (addr + align - 1) & !(align - 1)
     }
 }
 
 unsafe impl GlobalAlloc for BumpAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        let alignment = layout.align();
-        let byte_size: usize = round_to_multiple_of(layout.size() as usize, alignment);
-
         let mut offset = self.offset.load(Ordering::Relaxed);
         loop {
-            let end = offset + byte_size;
+            let start = align_gt(offset, layout.align());
+            let end = start.saturating_add(layout.size());
 
             if end >= TOTAL_BYTES {
                 return ptr::null_mut();
@@ -87,7 +79,7 @@ unsafe impl GlobalAlloc for BumpAlloc {
                     Ordering::Relaxed,
                 ) {
                     Ok(_) => {
-                        return HEAP[offset..end].as_mut_ptr() as *mut u8;
+                        return HEAP[start..end].as_mut_ptr() as *mut u8;
                     }
                     Err(cur) => {
                         offset = cur;
@@ -106,11 +98,34 @@ unsafe impl GlobalAlloc for BumpAlloc {
 mod test {
     use super::*;
     use quickcheck::{QuickCheck, TestResult};
+    use std::alloc::Layout;
+    use std::mem;
 
     #[test]
-    fn round_up_test_always_greater_equal() {
+    fn algorithm_test() {
+        // This test is the same basic bump algorithm -- minus the concurrency
+        // bits -- that you'll find above. The allocation should consume only
+        // the minimum number of bytes needed but each subsequent allocation
+        // should be aligned on word boundaries.
+        let mut offset = 0;
+        // start, end
+        let layout = Layout::from_size_align(mem::size_of::<u8>(), mem::size_of::<u64>()).unwrap();
+        let examples = vec![(0, 1), (8, 9), (16, 17)];
+        for (start_exp, end_exp) in examples.into_iter() {
+            let start = align_gt(offset, layout.align());
+            let end = start.saturating_add(layout.size());
+
+            assert_eq!(start, start_exp);
+            assert_eq!(end, end_exp);
+
+            offset = end;
+        }
+    }
+
+    #[test]
+    fn align_always_greater_equal() {
         fn inner(val: usize, align: usize) -> TestResult {
-            let ret = round_to_multiple_of(val, align);
+            let ret = align_gt(val, align);
             TestResult::from_bool(ret >= val)
         }
         QuickCheck::new().quickcheck(inner as fn(usize, usize) -> TestResult);
