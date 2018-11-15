@@ -1,5 +1,5 @@
-extern crate hashbrown;
 extern crate bh_alloc;
+extern crate hashbrown;
 
 #[global_allocator]
 static ALLOC: bh_alloc::BumpAlloc = bh_alloc::BumpAlloc::INIT;

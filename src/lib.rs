@@ -19,13 +19,13 @@ extern crate quickcheck;
 pub mod fuzz;
 mod util;
 
-use util::align_gt;
 use std::alloc::{GlobalAlloc, Layout};
 use std::ptr;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use util::align_gt;
 
 /// Total number of bytes that [`BumpAlloc`] will have available to it.
-pub const TOTAL_BYTES: usize = 5_000_000; // 500 MB
+pub const TOTAL_BYTES: usize = 500_000_000; // 500 MB
 static mut HEAP: [u8; TOTAL_BYTES] = [0; TOTAL_BYTES];
 
 /// Bump allocator for multi-core systems
