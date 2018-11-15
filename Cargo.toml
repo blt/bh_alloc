@@ -15,11 +15,3 @@ libc = "0.2"
 [dev-dependencies]
 quickcheck = "0.7"
 hashbrown = "0.1"
-
-[[bin]]
-path = "src/bin/hello_world.rs"
-name = "hello_world"
-
-[[bin]]
-path = "src/bin/alloc_and_destroy.rs"
-name = "alloc_and_destroy"

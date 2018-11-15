@@ -7,7 +7,7 @@
 extern crate libc;
 
 use self::libc::{_exit, EXIT_SUCCESS};
-
+use super::util::align_gt;
 use std::alloc::{GlobalAlloc, Layout};
 use std::cell::UnsafeCell;
 
@@ -50,19 +50,11 @@ impl BumpAlloc {
     pub const INIT: Self = <Self as ConstInit>::INIT;
 }
 
-fn align_gt(addr: usize, align: usize) -> usize {
-    if align == 0 {
-        addr
-    } else {
-        (addr + align - 1) & !(align - 1)
-    }
-}
-
 unsafe impl GlobalAlloc for BumpAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let offset = self.offset.get();
 
-        let start = align_gt(*offset, layout.align());
+        let start = align_gt(*offset, layout);
         let end = start.saturating_add(layout.size());
 
         if end >= TOTAL_BYTES {
