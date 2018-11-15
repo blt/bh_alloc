@@ -6,7 +6,6 @@ pub fn align_gt(addr: usize, layout: Layout) -> usize {
     ((addr + align - 1) & !(align - 1)) * 2
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
