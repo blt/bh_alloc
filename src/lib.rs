@@ -5,8 +5,8 @@
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::perf))]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::style))]
 
-#[cfg(test)]
-extern crate quickcheck;
+// #[cfg(test)]
+// extern crate quickcheck;
 
 #[deny(bad_style)]
 #[deny(future_incompatible)]
@@ -22,10 +22,10 @@ mod util;
 use std::alloc::{GlobalAlloc, Layout};
 use std::ptr;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use util::align_gt;
+use util::align;
 
 /// Total number of bytes that [`BumpAlloc`] will have available to it.
-pub const TOTAL_BYTES: usize = 500_000_000; // 500 MB
+pub const TOTAL_BYTES: usize = 500_000; // 50 MB
 static mut HEAP: [u8; TOTAL_BYTES] = [0; TOTAL_BYTES];
 
 /// Bump allocator for multi-core systems
@@ -56,11 +56,18 @@ impl BumpAlloc {
     pub const INIT: Self = <Self as ConstInit>::INIT;
 }
 
+const BYTE_ALIGNMENT: usize = 16;
+
 unsafe impl GlobalAlloc for BumpAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        // here's an issue, the computer doesn't give a fuck about my
+        // offset. All it cares about is wether the _address_ is 16 byte
+        // aligned. It may not be, here.
+
         let mut offset = self.offset.load(Ordering::Relaxed);
         loop {
-            let start = align_gt(offset, layout);
+            // check example for align_offset
+            let start = align(offset, BYTE_ALIGNMENT);
             let end = start.saturating_add(layout.size());
 
             if end >= TOTAL_BYTES {
@@ -103,9 +110,9 @@ mod test {
         let mut offset = 0;
         // start, end
         let layout = Layout::from_size_align(mem::size_of::<u8>(), mem::size_of::<u64>()).unwrap();
-        let examples = vec![(0, 1), (16, 17), (48, 49)];
+        let examples = vec![(0, 1), (16, 17), (32, 33)];
         for (start_exp, end_exp) in examples.into_iter() {
-            let start = align_gt(offset, layout);
+            let start = align(offset, BYTE_ALIGNMENT);
             let end = start.saturating_add(layout.size());
 
             assert_eq!(start, start_exp);

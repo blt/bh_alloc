@@ -1,37 +1,44 @@
-use std::alloc::Layout;
+pub fn align(offset: usize, align_size_bytes: usize) -> usize {
+    if align_size_bytes == 0 {
+        return offset;
+    }
 
-pub fn align_gt(addr: usize, layout: Layout) -> usize {
-    let align = layout.align();
-    assert!(align != 0);
-    ((addr + align - 1) & !(align - 1)) * 2
+    let rem = offset % align_size_bytes;
+    if rem == 0 {
+        return offset;
+    }
+
+    (offset + align_size_bytes) - rem
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use quickcheck::{QuickCheck, TestResult};
+    // use quickcheck::{QuickCheck, TestResult};
     use std::alloc::Layout;
     use std::mem;
 
     #[test]
-    fn align_always_greater_equal_32bit() {
-        fn inner(val: usize) -> TestResult {
-            let layout = Layout::from_size_align(val, mem::size_of::<u32>()).unwrap();
-            let ret = align_gt(val, layout);
-            assert_eq!(ret % 8, 0);
-            TestResult::from_bool(ret >= val)
-        }
-        QuickCheck::new().quickcheck(inner as fn(usize) -> TestResult);
-    }
-
-    #[test]
-    fn align_always_greater_equal_64bit() {
-        fn inner(val: usize) -> TestResult {
-            let layout = Layout::from_size_align(val, mem::size_of::<u64>()).unwrap();
-            let ret = align_gt(val, layout);
-            assert_eq!(ret % 16, 0);
-            TestResult::from_bool(ret >= val)
-        }
-        QuickCheck::new().quickcheck(inner as fn(usize) -> TestResult);
+    fn align_test() {
+        // Goal is to align allocations along double words, here 16 bytes.
+        let double_word_bytes = 16;
+        let mut offset = 0;
+        // The first allocation takes place at memory offset 16 and is for one
+        // byte. Expectation is that 0 bytes will need to be added to the offset
+        // to meet alignment.
+        assert_eq!(0, align(offset, double_word_bytes));
+        offset += 1;
+        // Okay, now, offset is 1 and we want to allocate another byte. We'll be
+        // scooted forward to the 16th byte.
+        assert_eq!(16, align(offset, double_word_bytes));
+        offset = 16;
+        offset += 1;
+        // Now the offset is 17 and a u32 is being allocated. We'll be scooted
+        // forward to the 32nd byte and the offset will be 36.
+        assert_eq!(32, align(offset, double_word_bytes));
+        offset = 32;
+        offset += 4;
+        // Now allocate another byte.
+        assert_eq!(48, align(offset, double_word_bytes));
     }
 }
