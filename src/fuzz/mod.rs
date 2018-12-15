@@ -7,12 +7,12 @@
 extern crate libc;
 
 use self::libc::{_exit, EXIT_SUCCESS};
-use super::util::align;
+use super::util::align_diff;
+use super::{BYTE_ALIGNMENT, TOTAL_BYTES};
 use std::alloc::{GlobalAlloc, Layout};
 use std::cell::UnsafeCell;
 
 /// Total number of bytes that [`BumpAlloc`] will have available to it.
-pub const TOTAL_BYTES: usize = 500_000_000; // 500 MB
 static mut HEAP: [u8; TOTAL_BYTES] = [0; TOTAL_BYTES];
 
 /// Bump allocator for *single* core systems
@@ -54,7 +54,8 @@ unsafe impl GlobalAlloc for BumpAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let offset = self.offset.get();
 
-        let start = align(*offset, layout.align());
+        let diff = align_diff(HEAP.as_mut_ptr().add(*offset) as usize, BYTE_ALIGNMENT);
+        let start = *offset + diff;
         let end = start.saturating_add(layout.size());
 
         if end >= TOTAL_BYTES {

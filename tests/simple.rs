@@ -11,7 +11,7 @@ fn hello_world() {
 
 #[test]
 fn alloc_and_destroy() {
-    for i in 0..5_000_000 {
+    for i in 0..5_000 {
         let bi = Box::new(i);
         drop(bi);
     }
