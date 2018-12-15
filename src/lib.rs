@@ -22,10 +22,10 @@ mod util;
 use std::alloc::{GlobalAlloc, Layout};
 use std::ptr;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use util::align;
+use util::align_diff;
 
 /// Total number of bytes that [`BumpAlloc`] will have available to it.
-pub const TOTAL_BYTES: usize = 500_000; // 50 MB
+pub const TOTAL_BYTES: usize = 512_000; // 500 kibibytes
 static mut HEAP: [u8; TOTAL_BYTES] = [0; TOTAL_BYTES];
 
 /// Bump allocator for multi-core systems
@@ -60,14 +60,10 @@ const BYTE_ALIGNMENT: usize = 16;
 
 unsafe impl GlobalAlloc for BumpAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        // here's an issue, the computer doesn't give a fuck about my
-        // offset. All it cares about is wether the _address_ is 16 byte
-        // aligned. It may not be, here.
-
         let mut offset = self.offset.load(Ordering::Relaxed);
         loop {
-            // check example for align_offset
-            let start = align(offset, BYTE_ALIGNMENT);
+            let diff = align_diff(HEAP.as_mut_ptr().add(offset) as usize, BYTE_ALIGNMENT);
+            let start = offset + diff;
             let end = start.saturating_add(layout.size());
 
             if end >= TOTAL_BYTES {
@@ -92,33 +88,5 @@ unsafe impl GlobalAlloc for BumpAlloc {
 
     unsafe fn dealloc(&self, _: *mut u8, _: Layout) {
         // never deallocate
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use std::alloc::Layout;
-    use std::mem;
-
-    #[test]
-    fn algorithm_test() {
-        // This test is the same basic bump algorithm -- minus the concurrency
-        // bits -- that you'll find above. The allocation should consume only
-        // the minimum number of bytes needed but each subsequent allocation
-        // should be aligned on word boundaries.
-        let mut offset = 0;
-        // start, end
-        let layout = Layout::from_size_align(mem::size_of::<u8>(), mem::size_of::<u64>()).unwrap();
-        let examples = vec![(0, 1), (16, 17), (32, 33)];
-        for (start_exp, end_exp) in examples.into_iter() {
-            let start = align(offset, BYTE_ALIGNMENT);
-            let end = start.saturating_add(layout.size());
-
-            assert_eq!(start, start_exp);
-            assert_eq!(end, end_exp);
-
-            offset = end;
-        }
     }
 }
