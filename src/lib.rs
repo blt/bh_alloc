@@ -4,6 +4,7 @@
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::pedantic))]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::perf))]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::style))]
+#![no_std]
 
 // #[cfg(test)]
 // extern crate quickcheck;
@@ -19,9 +20,9 @@
 pub mod fuzz;
 mod util;
 
-use std::alloc::{GlobalAlloc, Layout};
-use std::ptr;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use core::alloc::{GlobalAlloc, Layout};
+use core::ptr;
+use core::sync::atomic::{AtomicUsize, Ordering};
 use util::align_diff;
 
 /// Total number of bytes that [`BumpAlloc`] will have available to it.
@@ -56,13 +57,11 @@ impl BumpAlloc {
     pub const INIT: Self = <Self as ConstInit>::INIT;
 }
 
-const BYTE_ALIGNMENT: usize = 16;
-
 unsafe impl GlobalAlloc for BumpAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let mut offset = self.offset.load(Ordering::Relaxed);
         loop {
-            let diff = align_diff(HEAP.as_mut_ptr().add(offset) as usize, BYTE_ALIGNMENT);
+            let diff = align_diff(HEAP.as_mut_ptr().add(offset) as usize, layout.align());
             let start = offset + diff;
             let end = start.saturating_add(layout.size());
 
