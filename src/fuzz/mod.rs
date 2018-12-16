@@ -8,9 +8,9 @@ extern crate libc;
 
 use self::libc::{_exit, EXIT_SUCCESS};
 use super::util::align_diff;
-use super::{BYTE_ALIGNMENT, TOTAL_BYTES};
-use std::alloc::{GlobalAlloc, Layout};
-use std::cell::UnsafeCell;
+use super::TOTAL_BYTES;
+use core::alloc::{GlobalAlloc, Layout};
+use core::cell::UnsafeCell;
 
 /// Total number of bytes that [`BumpAlloc`] will have available to it.
 static mut HEAP: [u8; TOTAL_BYTES] = [0; TOTAL_BYTES];
@@ -54,7 +54,7 @@ unsafe impl GlobalAlloc for BumpAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let offset = self.offset.get();
 
-        let diff = align_diff(HEAP.as_mut_ptr().add(*offset) as usize, BYTE_ALIGNMENT);
+        let diff = align_diff(HEAP.as_mut_ptr().add(*offset) as usize, layout.align());
         let start = *offset + diff;
         let end = start.saturating_add(layout.size());
 
