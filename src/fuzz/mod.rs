@@ -23,7 +23,7 @@ static mut HEAP: [u8; TOTAL_BYTES] = [0; TOTAL_BYTES];
 /// that memory is allocated at program start and never freed. This is very
 /// fast.
 ///
-/// BumpAlloc has an additional feature. When all its heap memory is exhausted
+/// `BumpAlloc` has an additional feature. When all its heap memory is exhausted
 /// `libc::_exit(EXIT_SUCCESS)` is called. This behaviour aids in the production
 /// of fuzzers.
 pub struct BumpAlloc {
@@ -34,11 +34,12 @@ unsafe impl Sync for BumpAlloc {}
 
 // thanks, wee_alloc
 trait ConstInit {
+    #[allow(clippy::declare_interior_mutable_const)]
     const INIT: Self;
 }
 
 impl ConstInit for BumpAlloc {
-    const INIT: BumpAlloc = BumpAlloc {
+    const INIT: Self = Self {
         offset: UnsafeCell::new(0),
     };
 }
@@ -47,6 +48,7 @@ impl BumpAlloc {
     /// Initialization for [`BumpAlloc`]
     ///
     /// See the binaries in this repository for full examples.
+    #[allow(clippy::declare_interior_mutable_const)]
     pub const INIT: Self = <Self as ConstInit>::INIT;
 }
 

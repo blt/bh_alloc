@@ -1,13 +1,6 @@
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::cargo))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::complexity))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::correctness))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::pedantic))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::perf))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::style))]
+#![deny(clippy::pedantic)]
+#![deny(clippy::all)]
 #![no_std]
-
-// #[cfg(test)]
-// extern crate quickcheck;
 
 #[deny(bad_style)]
 #[deny(future_incompatible)]
@@ -44,16 +37,18 @@ unsafe impl Sync for BumpAlloc {}
 
 // thanks, wee_alloc
 trait ConstInit {
+    #[allow(clippy::declare_interior_mutable_const)]
     const INIT: Self;
 }
 
 impl ConstInit for BumpAlloc {
-    const INIT: BumpAlloc = BumpAlloc {
+    const INIT: Self = Self {
         offset: AtomicUsize::new(0),
     };
 }
 
 impl BumpAlloc {
+    #[allow(clippy::declare_interior_mutable_const)]
     pub const INIT: Self = <Self as ConstInit>::INIT;
 }
 
