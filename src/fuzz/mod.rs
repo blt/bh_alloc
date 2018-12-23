@@ -11,6 +11,7 @@ use super::util::align_diff;
 use super::TOTAL_BYTES;
 use core::alloc::{GlobalAlloc, Layout};
 use core::cell::UnsafeCell;
+use core::ptr;
 
 /// Total number of bytes that [`BumpAlloc`] will have available to it.
 static mut HEAP: [u8; TOTAL_BYTES] = [0; TOTAL_BYTES];
@@ -27,6 +28,7 @@ static mut HEAP: [u8; TOTAL_BYTES] = [0; TOTAL_BYTES];
 /// `libc::_exit(EXIT_SUCCESS)` is called. This behaviour aids in the production
 /// of fuzzers.
 pub struct BumpAlloc {
+    memblk: UnsafeCell<*mut u8>,
     offset: UnsafeCell<usize>,
 }
 
@@ -40,6 +42,7 @@ trait ConstInit {
 
 impl ConstInit for BumpAlloc {
     const INIT: Self = Self {
+        memblk: UnsafeCell::new(ptr::null_mut()),
         offset: UnsafeCell::new(0),
     };
 }
@@ -55,6 +58,21 @@ impl BumpAlloc {
 unsafe impl GlobalAlloc for BumpAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let offset = self.offset.get();
+
+        if (*self.memblk.get()).is_null() {
+            let ptr = libc::mmap(
+                0 as *mut libc::c_void,
+                TOTAL_BYTES as libc::size_t,
+                libc::PROT_READ | libc::PROT_WRITE,
+                libc::MAP_ANON | libc::MAP_PRIVATE,
+                -1,
+                0 as libc::off_t,
+            );
+            if ptr == libc::MAP_FAILED {
+                return ptr::null_mut();
+            }
+            *self.memblk.get() = ptr as *mut u8;
+        }
 
         let diff = align_diff(HEAP.as_mut_ptr().add(*offset) as usize, layout.align());
         let start = *offset + diff;
