@@ -1,6 +1,6 @@
 [package]
 name = "bh_alloc"
-version = "0.2.3"
+version = "0.2.4"
 authors = ["Brian L. Troutwine <brian@troutwine.us>"]
 keywords = ["fuzzing", "allocator", "nostd"]
 categories = ["memory-management"]
@@ -14,3 +14,4 @@ libc = "0.2"
 
 [dev-dependencies]
 hashbrown = "0.1"
+rayon = "1.0"
